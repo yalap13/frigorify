@@ -1,0 +1,9 @@
+[package]
+name = "frigorify"
+version = "0.1.0"
+entrypoint = "src/frigorify.typ"
+authors = ["Yannick Lapointe <https://github.com/yalap13>"]
+license = "MIT"
+description = "A programatical way of drawing dilution fridge setup diagrams."
+repository = "https://github.com/yalap13/frigorify.git"
+exclude = ["*.pdf", "docs/", ".git"]
