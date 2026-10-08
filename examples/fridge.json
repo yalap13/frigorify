@@ -1,0 +1,37 @@
+{
+  "stages": [
+    {"id": "room", "label": "300 K"},
+    {"id": "50k", "label": "50 K"},
+    {"id": "4k", "label": "4 K"},
+    {"id": "still", "label": "800 mK"},
+    {"id": "cold", "label": "100 mK"},
+    {"id": "mix", "label": "10 mK"}
+  ],
+  "lines": [
+    {"label": "Drive", "components": [
+      {"type": "attenuator", "stage": "50k", "db": 10},
+      {"type": "attenuator", "stage": "4k", "db": 10},
+      {"type": "attenuator", "stage": "still", "db": 20},
+      {"type": "attenuator", "stage": "mix", "db": 3}
+    ]},
+    {"label": "Flux", "components": [
+      {"type": "attenuator", "stage": "50k", "db": 10},
+      {"type": "attenuator", "stage": "4k", "db": 10},
+      {"type": "attenuator", "stage": "still", "db": 10},
+      {"type": "filter", "stage": "mix", "kind": "RC"}
+    ]},
+    {"label": "Readout in", "port": "6", "components": [
+      {"type": "attenuator", "stage": "50k", "db": 20},
+      {"type": "attenuator", "stage": "4k", "db": 10},
+      {"type": "attenuator", "stage": "still", "db": 10},
+      {"type": "attenuator", "stage": "cold", "db": 3}
+    ]},
+    {"label": "Readout out", "port": "3", "components": [
+      {"type": "amplifier", "stage": "room", "gain": "20 dB", "direction": "left"},
+      {"type": "amplifier", "stage": "4k", "gain": "HEMT", "direction": "left"},
+      {"type": "circulator", "stage": "mix", "direction": "left"},
+      {"type": "circulator", "stage": "mix", "direction": "left"},
+      {"type": "filter", "stage": "mix", "kind": "LPF"}
+    ]}
+  ]
+}

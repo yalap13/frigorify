@@ -1,0 +1,4 @@
+{
+  "stages": [{"id": "room", "label": "300 K"}, {"id": "4k", "label": "4 K"}, {"id": "mix", "label": "10 mK"}],
+  "lines": [{"id": "drive", "label": "Drive"}, {"id": "output", "label": "Output"}, {"id": "flux", "label": "Flux"}]
+}
