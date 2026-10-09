@@ -54,7 +54,7 @@ Requires CeTZ 0.5.2; Typst downloads it on first use if it is not cached.
 
 | Type | Symbol | Optional fields |
 | --- | --- | --- |
-| `attenuator` | Rectangle with attenuation | `db` (defaults to 0), `label` |
+| `attenuator` | Rectangle with attenuation | `db` (defaults to 0), `label`, `padding-x`, `padding-y` |
 | `amplifier` | Equilateral triangle | `gain` (string), `direction` (`right` or `left`), `label` |
 | `circulator` | One or two circles with open curved arrows | `direction` (`right` for counterclockwise, `left` for clockwise), `junctions` (1 or 2), `label` |
 | `filter` | Pass-response symbol in a rectangle | `kind` (`LPF`, `HPF`, `BPF`, or their spelled-out names), `label` |
@@ -72,6 +72,8 @@ The first version models circulators as inline two-endpoint symbols. Third-port 
   min-stage-gap: 1.6,
   component-gap: 0.18,
   stage-padding: 0.22,
+  attenuator-padding-x: 0.12,
+  attenuator-padding-y: 0.08,
   line-gap: 0.85,
   stroke: 0.7pt,
   stage-stroke: 1.2pt,
@@ -80,6 +82,8 @@ The first version models circulators as inline two-endpoint symbols. Third-port 
 ```
 
 Numeric distances are in `unit` (1 cm by default). `line-gap` controls the vertical distance between signal lines; retain enough room for labels above amplifiers and circulators when changing it or the font size. `lead` controls wire length outside the first and last intervals. `stroke` is a stroke thickness; stage boundaries have a separate thickness.
+
+`attenuator-padding-x` and `attenuator-padding-y` set the minimum space on each side of attenuator text, in canvas units. They also work in `style`. Override them per attenuator using `padding-x` and `padding-y`, for example `(type: "attenuator", stage: "4k", db: 20, padding-x: 0.3, padding-y: 0.15)` or `add.attenuator("drive", "4k", db: 20, padding-x: 0.3)`. Values must be nonnegative. Boxes retain a minimum width of 0.95 and height of 0.48 units, so short labels can have extra space. Larger vertical padding may require increasing `line-gap`. Standalone renderers accept `height` in the component dictionary; automatic text padding is calculated by `fridge-layout` and `fridge`.
 
 For each interval, Frigorify measures label widths and sums component widths, component gaps, and trailing stage padding for every line. The largest required width sets the interval width for all lines. Neighboring stage labels also set a lower bound on spacing. Empty intervals retain `min-stage-gap`. This produces aligned stage boundaries without manual coordinates.
 
@@ -124,3 +128,15 @@ Ordinary CeTZ calls in the block render after the diagram, in their relative ord
 Double-junction circulators use `junctions: 2` (or `"junctions": 2` in JSON). Their circles touch and share a rectangle with zero padding; layout reserves room for both junctions. Single junctions remain the default. LPF, HPF, and BPF filters now show response symbols instead of acronyms; an explicit `label` appears above those symbols. Other kinds, such as RC, keep their text labels for compatibility.
 
 Low-level functions in `components.typ` still draw individual symbols inside CeTZ canvases. `builders.typ` contains the block commands and config assembly, while `frigorify.typ` handles validation and layout.
+
+## API reference
+
+Public functions and their parameters use [Tidy 0.4.3](https://typst.app/universe/package/tidy/) doc-comments (`///` descriptions and `->` type annotations) directly in the source. The reference covers diagram/layout functions, standalone CeTZ symbols, and `add` drawing-block commands, including defaults, units, and component options.
+
+Generate the reference from the repository root:
+
+```sh
+typst compile --root . docs/reference.typ docs/reference.pdf
+```
+
+Tidy is needed only to build the documentation, not to use Frigorify.

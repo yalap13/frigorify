@@ -4,7 +4,13 @@
 
 #import "components.typ": amplifier, attenuator, circulator, component-label, component-types, filter, fridge-component
 
-#let validate-config(config) = {
+/// Validate the configuration, failing an assertion when its stages, lines, or component fields are invalid.
+/// -> none
+#let validate-config(
+  /// Fridge configuration with nonempty `stages` and `lines` arrays. Stages have unique string `id` and `label` fields; components name their `type` and `stage`.
+  /// -> dictionary
+  config,
+) = {
   assert(type(config) == dictionary, message: "Fridge configuration must be a dictionary.")
   assert("stages" in config and "lines" in config, message: "Configuration needs stages and lines arrays.")
   assert(type(config.stages) == array and config.stages.len() > 0, message: "stages must be a nonempty array.")
@@ -39,6 +45,14 @@
       if component.type == "filter" {
         assert(type(component.at("kind", default: "LPF")) == str, message: "Filter kind must be a string.")
       }
+      if component.type == "attenuator" {
+        for key in ("padding-x", "padding-y") {
+          if key in component {
+            assert(type(component.at(key)) in (int, float) and component.at(key) >= 0,
+              message: "Attenuator padding must be a nonnegative number.")
+          }
+        }
+      }
       if "width" in component {
         assert(
           type(component.width) in (int, float) and component.width > 0,
@@ -50,13 +64,37 @@
 }
 
 // Call in a Typst context. All returned geometry is in canvas units.
+/// Measure labels and compute stage and component geometry. Call inside a Typst `context`.
+/// Returns `stages` (stage x coordinates), `end`, `gaps`, and nested `widths` and `heights` arrays indexed by wire and component.
+/// Also returns `line-gap`, `component-gap`, and `stage-padding`. Heights describe attenuator boxes; other entries are 0.48 placeholders.
+/// -> dictionary
 #let fridge-layout(
+  /// Fridge configuration with nonempty `stages` and `lines` arrays. Stages have unique string `id` and `label` fields; components name their `type` and `stage`.
+  /// -> dictionary
   config,
+  /// Physical length of one canvas unit. Must be positive.
+  /// -> length
   unit: 1cm,
+  /// Label text size. Must be positive.
+  /// -> length
   font-size: 9pt,
+  /// Minimum horizontal interval after each stage, in canvas units. Must be positive.
+  /// -> int | float
   min-stage-gap: 1.6,
+  /// Nonnegative horizontal space between components at the same stage, in canvas units.
+  /// -> int | float
   component-gap: 0.18,
+  /// Nonnegative clearance after a component chain before the next boundary, in canvas units.
+  /// -> int | float
   stage-padding: 0.22,
+  /// Minimum padding on each horizontal side of attenuator text, in canvas units. Nonnegative; component `padding-x` overrides it. Boxes retain a minimum width of 0.95 units.
+  /// -> int | float
+  attenuator-padding-x: 0.12,
+  /// Minimum padding on each vertical side of attenuator text, in canvas units. Nonnegative; component `padding-y` overrides it. Boxes retain a minimum height of 0.48 units.
+  /// -> int | float
+  attenuator-padding-y: 0.08,
+  /// Vertical distance between wire centers, in canvas units. Must be positive; allow room for tall symbols and labels.
+  /// -> int | float
   line-gap: 0.85,
 ) = {
   validate-config(config)
@@ -65,14 +103,22 @@
     min-stage-gap > 0 and component-gap >= 0 and stage-padding >= 0 and line-gap > 0,
     message: "Layout spacing must be positive (padding and component-gap may be zero).",
   )
+  assert(attenuator-padding-x >= 0 and attenuator-padding-y >= 0, message: "Attenuator padding must be nonnegative.")
   let widths = config.lines.map(wire => wire
     .at("components", default: ())
     .map(component => {
       let label = component-label(component)
-      let label-width = measure(text(size: font-size, label)).width / unit + 0.24
+      let padding = if component.type == "attenuator" { component.at("padding-x", default: attenuator-padding-x) } else { 0.12 }
+      let label-width = measure(text(size: font-size, label)).width / unit + 2 * padding
       let base = if component.type == "circulator" { 0.54 * component.at("junctions", default: 1) } else if component.type == "amplifier" { 0.8 } else { 0.95 }
       calc.max(base, label-width, component.at("width", default: 0))
     }))
+  let heights = config.lines.map(wire => wire.at("components", default: ()).map(component => {
+    if component.type == "attenuator" {
+      calc.max(0.48, measure(text(size: font-size, component-label(component))).height / unit
+        + 2 * component.at("padding-y", default: attenuator-padding-y))
+    } else { 0.48 }
+  }))
   let positions = (0,)
   let gaps = ()
   for (index, stage) in config.stages.enumerate() {
@@ -101,35 +147,77 @@
     end: positions.last(),
     gaps: gaps,
     widths: widths,
+    heights: heights,
     line-gap: line-gap,
     component-gap: component-gap,
     stage-padding: stage-padding,
   )
 }
 
+/// Draw a dilution refrigerator wiring diagram with automatic stage spacing.
+/// Components form a chain to the right of their named stage boundary.
+/// Import from `src/frigorify.typ`; use its `add` namespace for drawing-block commands.
+///
+/// ```typ
+/// #fridge(config, attenuator-padding-x: 0.3, attenuator-padding-y: 0.15)
+/// ```
+/// -> content
 #let fridge(
+  /// Fridge configuration with nonempty `stages` and `lines` arrays. Stages have unique string `id` and `label` fields; components name their `type` and `stage`.
+  /// -> dictionary
   config,
+  /// Physical length of one canvas unit. Must be positive.
+  /// -> length
   unit: 1cm,
+  /// Label text size. Must be positive.
+  /// -> length
   font-size: 9pt,
+  /// Minimum horizontal interval after each stage, in canvas units. Must be positive.
+  /// -> int | float
   min-stage-gap: 1.6,
+  /// Nonnegative horizontal space between components at the same stage, in canvas units.
+  /// -> int | float
   component-gap: 0.18,
+  /// Nonnegative clearance after a component chain before the next boundary, in canvas units.
+  /// -> int | float
   stage-padding: 0.22,
+  /// Minimum padding on each horizontal side of attenuator text, in canvas units. Nonnegative; component `padding-x` overrides it. Boxes retain a minimum width of 0.95 units.
+  /// -> int | float
+  attenuator-padding-x: 0.12,
+  /// Minimum padding on each vertical side of attenuator text, in canvas units. Nonnegative; component `padding-y` overrides it. Boxes retain a minimum height of 0.48 units.
+  /// -> int | float
+  attenuator-padding-y: 0.08,
+  /// Vertical distance between wire centers, in canvas units. Must be positive; allow room for tall symbols and labels.
+  /// -> int | float
   line-gap: 0.85,
+  /// Stroke for component outlines and wires without a configured color.
+  /// -> length
   stroke: 0.7pt,
+  /// Thickness of stage boundaries.
+  /// -> length
   stage-stroke: 1.2pt,
+  /// Nonnegative wire length outside the diagram intervals, in canvas units.
+  /// -> int | float
   lead: 0.65,
+  /// Diagram keyword options overriding individual arguments. Unknown keys are rejected.
+  /// -> dictionary
   style: (:),
+  /// At most one positional drawing block returning an array of `add` commands and CeTZ elements.
+  /// Named arguments are rejected. Elements render after the diagram; `add.overlay` receives final geometry.
+  /// -> arguments
   ..body,
 ) = context {
   assert(body.named() == (:) and body.pos().len() <= 1, message: "fridge accepts one optional drawing block.")
   let (config, extras) = add.assemble(config, body.pos().at(0, default: ()))
-  let allowed = ("unit", "font-size", "min-stage-gap", "component-gap", "stage-padding", "line-gap", "stroke", "stage-stroke", "lead")
+  let allowed = ("unit", "font-size", "min-stage-gap", "component-gap", "stage-padding", "attenuator-padding-x", "attenuator-padding-y", "line-gap", "stroke", "stage-stroke", "lead")
   assert(style.keys().all(key => key in allowed), message: "Unknown fridge style key.")
   let unit = style.at("unit", default: unit)
   let font-size = style.at("font-size", default: font-size)
   let min-stage-gap = style.at("min-stage-gap", default: min-stage-gap)
   let component-gap = style.at("component-gap", default: component-gap)
   let stage-padding = style.at("stage-padding", default: stage-padding)
+  let attenuator-padding-x = style.at("attenuator-padding-x", default: attenuator-padding-x)
+  let attenuator-padding-y = style.at("attenuator-padding-y", default: attenuator-padding-y)
   let line-gap = style.at("line-gap", default: line-gap)
   let stroke = style.at("stroke", default: stroke)
   let stage-stroke = style.at("stage-stroke", default: stage-stroke)
@@ -141,6 +229,8 @@
     min-stage-gap: min-stage-gap,
     component-gap: component-gap,
     stage-padding: stage-padding,
+    attenuator-padding-x: attenuator-padding-x,
+    attenuator-padding-y: attenuator-padding-y,
     line-gap: line-gap,
   )
   assert(lead >= 0, message: "lead must be nonnegative.")
@@ -167,7 +257,8 @@
           if component.stage == stage.id {
             let width = layout.widths.at(row).at(ci)
             draw.group({
-              fridge-component(component, x: x, y: y, width: width, font-size: font-size, stroke: stroke)
+              let rendered = if component.type == "attenuator" { component + (height: layout.heights.at(row).at(ci),) } else { component }
+              fridge-component(rendered, x: x, y: y, width: width, font-size: font-size, stroke: stroke)
             }, name: "component-" + str(row + 1) + "-" + str(ci + 1))
             x += width + component-gap
           }

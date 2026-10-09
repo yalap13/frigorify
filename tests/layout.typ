@@ -41,5 +41,16 @@
   let named = (stages: empty.stages, lines: ((id: "drive", label: "Drive"),))
   let (by-id, _) = add.assemble(named, add.filter("drive", "b", kind: "HPF"))
   assert.eq(by-id.lines.first().components.first().kind, "HPF")
+  let padded = fridge-layout(busy, attenuator-padding-x: 0.8, attenuator-padding-y: 0.4)
+  assert(padded.widths.first().first() > layout.widths.first().first())
+  assert(padded.heights.first().first() > layout.heights.first().first())
+  assert.eq(padded.widths.at(1), layout.widths.at(1))
+  let overridden = (stages: empty.stages, lines: ((components: (
+    (type: "attenuator", stage: "a", db: 10, padding-x: 0.8, padding-y: 0.4),
+  ),),))
+  let override-layout = fridge-layout(overridden)
+  assert.eq(override-layout.widths.first().first(), padded.widths.first().first())
+  assert.eq(override-layout.heights.first().first(), padded.heights.first().first())
+  fridge(overridden, style: (attenuator-padding-x: 0, attenuator-padding-y: 0))
   fridge(busy)
 }

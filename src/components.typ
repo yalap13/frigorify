@@ -3,7 +3,13 @@
 // Configuration is deliberately made of JSON-compatible dictionaries and arrays.
 #let component-types = ("attenuator", "circulator", "amplifier", "filter")
 
-#let component-label(component) = {
+/// Resolve a component label. An explicit `label` takes precedence; attenuators use `db` plus dB, amplifiers use `gain`, and response-symbol filters default to an empty label.
+/// -> str
+#let component-label(
+  /// Component dictionary. See the function description for supported fields.
+  /// -> dictionary
+  component,
+) = {
   if "label" in component { component.label } else if component.type == "attenuator" {
     str(component.at("db", default: 0)) + " dB"
   } else if component.type == "amplifier" { component.at("gain", default: "") } else if component.type == "filter" {
@@ -16,14 +22,56 @@
 
 // Each function emits CeTZ elements, for use inside a canvas.
 // x is the symbol's left edge and y is the wire center.
-#let attenuator(component, x: 0, y: 0, width: 1, font-size: 9pt, stroke: 0.7pt) = {
+/// Draw a rectangular attenuator centered on the wire. The label defaults to `db` (0) followed by dB. The component dictionary can specify `height` (default 0.48 canvas units). Text padding is measured by `fridge` and `fridge-layout`; standalone drawing uses the supplied width and height. Use inside a CeTZ canvas. Import from `src/frigorify.typ` or `src/components.typ`.
+/// -> array
+#let attenuator(
+  /// Component dictionary. See the function description for supported fields.
+  /// -> dictionary
+  component,
+  /// Left edge of the symbol, in canvas units.
+  /// -> int | float
+  x: 0,
+  /// Wire center and vertical center of the symbol, in canvas units.
+  /// -> int | float
+  y: 0,
+  /// Reserved horizontal space in canvas units. Sets rectangle width; triangles and circles have fixed geometry. Standalone rendering does not measure labels automatically.
+  /// -> int | float
+  width: 1,
+  /// Label text size. Must be positive.
+  /// -> length
+  font-size: 9pt,
+  /// Stroke for component outlines and wires without a configured color.
+  /// -> length
+  stroke: 0.7pt,
+) = {
   import draw: content, rect
-  let half-height = 0.24
+  let half-height = component.at("height", default: 0.48) / 2
   rect((x, y - half-height), (x + width, y + half-height), fill: white, stroke: stroke)
   content((x + width / 2, y), text(size: font-size, component-label(component)))
 }
 
-#let amplifier(component, x: 0, y: 0, width: 1, font-size: 9pt, stroke: 0.7pt) = {
+/// Draw an equilateral amplifier triangle of height 0.48 canvas units. `direction` is `right` (default) or `left`. An explicit `label`, or otherwise the string `gain`, appears above the triangle. Use inside a CeTZ canvas. Import from `src/frigorify.typ` or `src/components.typ`.
+/// -> array
+#let amplifier(
+  /// Component dictionary. See the function description for supported fields.
+  /// -> dictionary
+  component,
+  /// Left edge of the symbol, in canvas units.
+  /// -> int | float
+  x: 0,
+  /// Wire center and vertical center of the symbol, in canvas units.
+  /// -> int | float
+  y: 0,
+  /// Reserved horizontal space in canvas units. Sets rectangle width; triangles and circles have fixed geometry. Standalone rendering does not measure labels automatically.
+  /// -> int | float
+  width: 1,
+  /// Label text size. Must be positive.
+  /// -> length
+  font-size: 9pt,
+  /// Stroke for component outlines and wires without a configured color.
+  /// -> length
+  stroke: 0.7pt,
+) = {
   import draw: content, line
   let label = component-label(component)
   let half-height = 0.24
@@ -35,7 +83,28 @@
   if label != "" { content((x + triangle-width / 2, y + 0.38), text(size: font-size, label)) }
 }
 
-#let circulator(component, x: 0, y: 0, width: 1, font-size: 9pt, stroke: 0.7pt) = {
+/// Draw one or two circulator junctions of diameter 0.54 canvas units each. `junctions` is 1 (default) or 2; two circles touch inside a shared rectangle. `direction` is `right` (default, counterclockwise) or `left` (clockwise). An optional `label` appears above. Use inside a CeTZ canvas. Import from `src/frigorify.typ` or `src/components.typ`.
+/// -> array
+#let circulator(
+  /// Component dictionary. See the function description for supported fields.
+  /// -> dictionary
+  component,
+  /// Left edge of the symbol, in canvas units.
+  /// -> int | float
+  x: 0,
+  /// Wire center and vertical center of the symbol, in canvas units.
+  /// -> int | float
+  y: 0,
+  /// Reserved horizontal space in canvas units. Sets rectangle width; triangles and circles have fixed geometry. Standalone rendering does not measure labels automatically.
+  /// -> int | float
+  width: 1,
+  /// Label text size. Must be positive.
+  /// -> length
+  font-size: 9pt,
+  /// Stroke for component outlines and wires without a configured color.
+  /// -> length
+  stroke: 0.7pt,
+) = {
   import draw: arc, circle, content, group, rect-around
   let junctions = component.at("junctions", default: 1)
   assert(junctions in (1, 2), message: "Circulator junctions must be 1 or 2.")
@@ -62,7 +131,28 @@
   if label != "" { content((x + junctions * 0.27, y + 0.4), text(size: font-size, label)) }
 }
 
-#let filter(component, x: 0, y: 0, width: 1, font-size: 9pt, stroke: 0.7pt) = {
+/// Draw a rectangular filter with an LPF, HPF, or BPF response symbol. `kind` defaults to `LPF` and also accepts spelled-out names. An explicit `label` appears above response symbols; other kinds such as RC render text inside the box. Use inside a CeTZ canvas. Import from `src/frigorify.typ` or `src/components.typ`.
+/// -> array
+#let filter(
+  /// Component dictionary. See the function description for supported fields.
+  /// -> dictionary
+  component,
+  /// Left edge of the symbol, in canvas units.
+  /// -> int | float
+  x: 0,
+  /// Wire center and vertical center of the symbol, in canvas units.
+  /// -> int | float
+  y: 0,
+  /// Reserved horizontal space in canvas units. Sets rectangle width; triangles and circles have fixed geometry. Standalone rendering does not measure labels automatically.
+  /// -> int | float
+  width: 1,
+  /// Label text size. Must be positive.
+  /// -> length
+  font-size: 9pt,
+  /// Stroke for component outlines and wires without a configured color.
+  /// -> length
+  stroke: 0.7pt,
+) = {
   import draw: content, line, rect
   let kind = lower(component.at("kind", default: "LPF"))
   let half-height = 0.24
@@ -94,7 +184,29 @@
 
 // Keep the configuration-driven entrypoint shared by all component types.
 // width reserves horizontal space; triangles and circles have fixed sizes.
-#let fridge-component(component, x: 0, y: 0, width: 1, font-size: 9pt, stroke: 0.7pt) = {
+/// Draw a standalone CeTZ symbol selected by the component dictionary's `type`.
+/// Use inside a CeTZ canvas. Import from `src/frigorify.typ` or `src/components.typ`.
+/// -> array
+#let fridge-component(
+  /// Component dictionary. See the function description for supported fields.
+  /// -> dictionary
+  component,
+  /// Left edge of the symbol, in canvas units.
+  /// -> int | float
+  x: 0,
+  /// Wire center and vertical center of the symbol, in canvas units.
+  /// -> int | float
+  y: 0,
+  /// Reserved horizontal space in canvas units. Sets rectangle width; triangles and circles have fixed geometry. Standalone rendering does not measure labels automatically.
+  /// -> int | float
+  width: 1,
+  /// Label text size. Must be positive.
+  /// -> length
+  font-size: 9pt,
+  /// Stroke for component outlines and wires without a configured color.
+  /// -> length
+  stroke: 0.7pt,
+) = {
   let renderers = (attenuator: attenuator, amplifier: amplifier, circulator: circulator, filter: filter)
   assert(component.type in renderers, message: "Unknown component type: " + repr(component.type))
   let render = renderers.at(component.type)

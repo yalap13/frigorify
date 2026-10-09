@@ -15,7 +15,7 @@
     amplifier("output", "4k", direction: "left")
     circulator("output", "mix", junctions: 2, direction: "right")
     filter("output", "mix", kind: "high-pass")
-    circulator("flux", "4k")
+    circulator("flux", "4k", junctions: 2, direction: "left")
     filter("flux", "mix", kind: "band-pass")
 
     // Named CeTZ anchors are available after the diagram is drawn.
