@@ -22,6 +22,19 @@
       assert(used + layout.stage-padding <= layout.gaps.at(index) + 1e-9)
     }
   }
+  let amplifier-chain = (stages: empty.stages, lines: ((components: (
+    (type: "amplifier", stage: "a"), (type: "attenuator", stage: "a", db: 3),
+  )),))
+  let amplifier-layout = fridge-layout(amplifier-chain, component-gap: 0.01)
+  assert.eq(amplifier-layout.widths.first().first(), calc.sqrt(3) * 0.24)
+  let wide-amplifier = (stages: empty.stages, lines: ((components: (
+    (type: "amplifier", stage: "a", width: 1),
+  )),))
+  assert.eq(fridge-layout(wide-amplifier).widths.first().first(), 1)
+  let labelled-amplifier = (stages: empty.stages, lines: ((components: (
+    (type: "amplifier", stage: "a", gain: "A long amplifier label"),
+  )),))
+  assert(fridge-layout(labelled-amplifier).widths.first().first() > amplifier-layout.widths.first().first())
   let single = (stages: ((id: "mix", label: "10 mK"),), lines: ((components: ()),))
   assert.eq(fridge-layout(single).stages, (0,))
   // Additions append to JSON components without changing the initial config.
