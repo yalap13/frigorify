@@ -1,4 +1,4 @@
-= Using Frigorify
+= Using Frigorify: A Guide
 
 Import the package entrypoint as a namespace. From a document in this repository's
 root, use `#import "src/frigorify.typ" as f`. Documents in `examples/` or `docs/`
@@ -7,15 +7,21 @@ to generate this reference.
 
 == Public API map
 
-#table(columns: (1fr, 2fr), inset: 5pt,
+#table(
+  columns: (1fr, 2fr),
+  inset: 5pt,
   [API], [Purpose],
   [`f.fridge`], [Render a complete diagram from JSON or a native dictionary, optionally with a drawing block.],
   [`f.fridge-layout`], [Measure final configuration in a Typst context and return geometry.],
   [`f.validate-config`], [Validate component configuration without drawing.],
-  [`f.attenuator`, `f.amplifier`, `f.circulator`, `f.filter`, `f.rf-switch`, `f.fridge-component`], [Draw standalone symbols inside a CeTZ canvas.],
+  [`f.attenuator`, `f.amplifier`, `f.circulator`, `f.filter`, `f.rf-switch`, `f.fridge-component`],
+  [Draw standalone symbols inside a CeTZ canvas.],
+
   [`f.short`, `f.load`], [Draw ground terminations at coordinates or named anchors.],
   [`f.sline`, `f.zline`], [Draw routed connections; also available through `f.add`.],
-  [`f.add` component builders], [Append stage components before layout; includes attenuator, amplifier, circulator, filter, rf-switch, short, load.],
+  [`f.add` component builders],
+  [Append stage components before layout; includes attenuator, amplifier, circulator, filter, rf-switch, short, load.],
+
   [`f.add.connect`], [Replace a line endpoint with a connection to another line's circulator.],
   [`f.add.overlay`], [Draw using the final measured layout.],
   [`f.component-label`, `f.circulator-ports`, `f.connection-point`], [Advanced label and geometry helpers.],
@@ -67,14 +73,25 @@ individual keywords. Later stages keep their normal placement.
 
 == Component fields
 
-#table(columns: (1fr, 2fr), inset: 5pt,
+#table(
+  columns: (1fr, 2fr),
+  inset: 5pt,
   [Type], [Fields and defaults],
-  [`attenuator`], [`db: 0`, optional label and nonnegative padding-x/y. Minimum box 0.95 × 0.48. Standalone height may be supplied.],
-  [`amplifier`], [`direction: "left"` or "right", `gain: ""`, optional label. Equilateral triangle height 0.48 and width about 0.416; reservation expands for labels or explicit width.],
-  [`circulator`], [`junctions: 1` or 2, `direction: "right"` (counterclockwise) or "left" (clockwise), optional label. Circle diameter 0.54.],
-  [`filter`], [`kind: "LPF"`. LPF/HPF/BPF and spelled-out names render response curves; other kinds render text. Optional label.],
+  [`attenuator`],
+  [`db: 0`, optional label and nonnegative padding-x/y. Minimum box 0.95 × 0.48. Standalone height may be supplied.],
+
+  [`amplifier`],
+  [`direction: "left"` or "right", `gain: ""`, optional label. Equilateral triangle height 0.48 and width about 0.416; reservation expands for labels or explicit width.],
+
+  [`circulator`],
+  [`junctions: 1` or 2, `direction: "right"` (counterclockwise) or "left" (clockwise), optional label. Circle diameter 0.54.],
+
+  [`filter`],
+  [`kind: "LPF"`. LPF/HPF/BPF and spelled-out names render response curves; other kinds render text. Optional label.],
+
   [`rf-switch`], [Optional label. Diameter 0.8; center is common input, six outer ports. Must be final on its line.],
-  [`short`, `load`], [Stage terminations; scale, label, show-label, font-size, stroke, direction. Must be final on their line.],
+  [`short`, `load`],
+  [Stage terminations; scale, label, show-label, font-size, stroke, direction. Must be final on their line.],
 )
 
 Stage termination inputs are at x + 0.2; switch common inputs are at x + 0.4.
@@ -108,9 +125,13 @@ not sorted stage order. Shapes expose CeTZ bounding anchors such as north/east;
 line paths expose start/end and percentage anchors. Explicit ports refer to
 physical connection points independently of labels and reserved widths.
 
-#table(columns: (1fr, 2fr), inset: 5pt,
+#table(
+  columns: (1fr, 2fr),
+  inset: 5pt,
   [Symbol], [Port anchors relative to component-N-M],
-  [Circulator], [`in` / `port-1` left, `out` / `port-2` right; port-3 is first junction bottom, port-4 second junction bottom (double only). Append -top/-bottom to select side. Per-junction names are junction-J-port-1/2/3 and junction-J-port-3-top/bottom, with J one-based.],
+  [Circulator],
+  [`in` / `port-1` left, `out` / `port-2` right; port-3 is first junction bottom, port-4 second junction bottom (double only). Append -top/-bottom to select side. Per-junction names are junction-J-port-1/2/3 and junction-J-port-3-top/bottom, with J one-based.],
+
   [RF switch], [`common` center; port-1 through port-6 clockwise from top. Ports 2 and 3 face right.],
   [Stage termination], [`in` at the line endpoint.],
   [Named standalone/port termination], [`name.in` input and `name.ground` first ground bar.],
@@ -176,7 +197,9 @@ options are available in JSON and block calls. Endpoint/port attachments accept
 optional `name`; stage components accept minimum `width` and use component-N-M
 for naming. For block endpoint calls, strings containing a dot mean an anchor.
 
-#table(columns: (1fr, 1fr, 2fr), inset: 5pt,
+#table(
+  columns: (1fr, 1fr, 2fr),
+  inset: 5pt,
   [Option], [Default], [Meaning],
   [scale], [0.65], [Positive geometry multiplier. 1 restores original geometry; text/stroke do not scale.],
   [direction], [down], [up/down/left/right from input toward ground.],
@@ -196,11 +219,15 @@ vertical symbols, labels, and port routing.
 block. To include additions, first call `add.assemble(config, commands)`, which
 returns the updated config and extras. `fridge` does this automatically.
 
-#table(columns: (1fr, 2fr), inset: 5pt,
+#table(
+  columns: (1fr, 2fr),
+  inset: 5pt,
   [Layout field], [Meaning; all indices are zero-based],
   [stages], [Stage boundary x coordinates.],
   [end / gaps], [Right edge before lead; per-stage interval widths.],
-  [widths / heights], [Nested per-line/per-component reservations and box heights. Non-attenuator heights are 0.48 placeholders, not symbol bounds.],
+  [widths / heights],
+  [Nested per-line/per-component reservations and box heights. Non-attenuator heights are 0.48 placeholders, not symbol bounds.],
+
   [component-starts], [Nested per-line/per-stage chain starting x coordinates.],
   [left-extent], [Space before x=0 for first-stage chains, excluding lead.],
   [first-stage-side], [Resolved placement side.],
