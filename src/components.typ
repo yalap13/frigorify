@@ -6,6 +6,15 @@
 /// -> array
 #let component-types = ("attenuator", "circulator", "amplifier", "filter", "rf-switch", "short", "load", "not-connected")
 
+// Component overrides share the same units in layout and standalone rendering.
+#let component-font-size(component, default: 9pt) = {
+  let size = component.at("font-size", default: default)
+  if type(size) in (int, float) { size *= 1pt }
+  assert(type(size) == length, message: "Component font-size must be a positive length or number of points.")
+  assert(size > 0pt, message: "Component font-size must be positive.")
+  size
+}
+
 /// Resolve the displayed component label without drawing. Attenuators use `db` plus dB,
 /// amplifiers use `gain`, and response-symbol filters default to an empty label.
 /// Explicit `label` overrides these defaults. Loads default to "50 Ω"; shorts have no
@@ -52,6 +61,7 @@
   /// -> length
   stroke: 0.7pt,
 ) = {
+  let font-size = component-font-size(component, default: font-size)
   import draw: content, rect
   let half-height = component.at("height", default: 0.48) / 2
   rect((x, y - half-height), (x + width, y + half-height), fill: white, stroke: stroke)
@@ -81,6 +91,7 @@
   /// -> length
   stroke: 0.7pt,
 ) = {
+  let font-size = component-font-size(component, default: font-size)
   import draw: content, line
   let label = component-label(component)
   let half-height = 0.24
@@ -157,6 +168,7 @@
   /// -> length
   stroke: 0.7pt,
 ) = {
+  let font-size = component-font-size(component, default: font-size)
   import draw: arc, circle, content, group, rect-around
   let junctions = component.at("junctions", default: 1)
   assert(junctions in (1, 2), message: "Circulator junctions must be 1 or 2.")
@@ -208,6 +220,7 @@
   /// -> length
   stroke: 0.7pt,
 ) = {
+  let font-size = component-font-size(component, default: font-size)
   import draw: content, line, rect
   let kind = lower(component.at("kind", default: "LPF"))
   let half-height = 0.24
@@ -261,6 +274,7 @@
   /// -> length
   stroke: 0.7pt,
 ) = {
+  let font-size = component-font-size(component, default: font-size)
   let mid = x + 0.4
   draw.circle((mid, y), radius: 0.4, fill: white, stroke: stroke)
   draw.line((x, y), (mid, y), stroke: stroke)
@@ -302,6 +316,7 @@
   /// -> length
   stroke: 0.7pt,
 ) = {
+  let font-size = component-font-size(component, default: font-size)
   let options = terminations.termination-options(component)
   let scale = options.at("scale", default: 0.65)
   let sign = if component.at("direction", default: "right") == "left" { -1 } else { 1 }
@@ -343,6 +358,7 @@
   /// -> length
   stroke: 0.7pt,
 ) = {
+  let font-size = component-font-size(component, default: font-size)
   let render = if component.type == "short" { terminations.short } else { terminations.load }
   let options = (:)
   for key in ("direction", "scale", "label", "show-label", "font-size", "stroke") {
@@ -381,6 +397,7 @@
   /// -> length
   stroke: 0.7pt,
 ) = {
+  let font-size = component-font-size(component, default: font-size)
   let renderers = (attenuator: attenuator, amplifier: amplifier, circulator: circulator, filter: filter, rf-switch: rf-switch, short: termination-component, load: termination-component, not-connected: not-connected)
   assert(component.type in renderers, message: "Unknown component type: " + repr(component.type))
   let render = renderers.at(component.type)

@@ -90,7 +90,15 @@ Circulators have inline left/right ports and bottom ports for custom routing. Pr
 
 `stage-label-position: "bottom"` places stage labels below the stage boundaries; the default is `"top"`. It also works in `style`, or as a top-level config/JSON field `"stage-label-position": "bottom"`. Style overrides the keyword argument, which overrides the config field.
 
+`line-label-position: "top"` places the left line labels above the start of each wire, inset by 0.15 canvas units. The left lead automatically expands to fit the widest label with 0.15 units of padding on each side, keeping labels clear of first-stage components and boundaries. The default `"left"` keeps them beside the wires. Set `line-label-font-size: 11pt` to size these labels independently of the diagram and components; when omitted, they inherit `font-size`. Numeric sizes are points. Both options work in `style` and as top-level config/JSON fields, with style overriding arguments and arguments overriding config. Right endpoint port labels retain the diagram font size. Allow enough `line-gap` for larger labels; `lead` remains the minimum left lead and the right lead length.
+
+```typst
+#fridge(config, line-label-position: "top", line-label-font-size: 11pt)
+```
+
 Numeric distances are in `unit` (1 cm by default). `line-gap` controls the vertical distance between signal lines; retain enough room for labels above amplifiers and circulators when changing it or the font size. `lead` controls wire length outside the first and last intervals. `stroke` is a stroke thickness; stage boundaries have a separate thickness.
+
+Every component accepts its own `font-size`, overriding the fridge's `font-size` for that label only. Use a Typst length or a number of points (including in JSON), for example `add.attenuator("drive", "4k", db: 20, font-size: 12pt)` or `(type: "filter", stage: "mix", label: "LPF", font-size: 7)`. The override is used both to draw the label and to measure its space, including attenuator box height. It also works with standalone component renderers and coupler descriptors. Components without an override inherit the fridge font size; stage and line labels continue to use the fridge setting. Sizes must be positive.
 
 `attenuator-padding-x` and `attenuator-padding-y` set the minimum space on each side of attenuator text, in canvas units. They also work in `style`. Override them per attenuator using `padding-x` and `padding-y`, for example `(type: "attenuator", stage: "4k", db: 20, padding-x: 0.3, padding-y: 0.15)` or `add.attenuator("drive", "4k", db: 20, padding-x: 0.3)`. Values must be nonnegative. Boxes retain a minimum width of 0.95 and height of 0.48 units, so short labels can have extra space. Larger vertical padding may require increasing `line-gap`. Standalone renderers accept `height` in the component dictionary; automatic text padding is calculated by `fridge-layout` and `fridge`.
 

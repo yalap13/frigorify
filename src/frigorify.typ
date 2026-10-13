@@ -5,7 +5,7 @@
 
 #import "builders.typ" as add
 
-#import "components.typ": amplifier, attenuator, circulator, circulator-ports, component-label, component-types, filter, rf-switch, not-connected, fridge-component
+#import "components.typ": amplifier, attenuator, circulator, circulator-ports, component-font-size, component-label, component-types, filter, rf-switch, not-connected, fridge-component
 
 /// Validate stages, lines, component types, labels, directions, sizes, and endpoint
 /// component ordering, failing an assertion for invalid data. No drawing or measurement.
@@ -47,6 +47,7 @@
         } else { component.at("direction", default: "right") in ("left", "right") },
         message: "Invalid component direction.",
       )
+      let _ = component-font-size(component)
       if component.type in ("short", "load", "not-connected") { let _ = termination-options(component) }
       if component.type == "circulator" {
         assert(component.at("junctions", default: 1) in (1, 2), message: "Circulator junctions must be 1 or 2.")
@@ -142,7 +143,7 @@
     .map(component => {
       let label = component-label(component)
       let padding = if component.type == "attenuator" { component.at("padding-x", default: attenuator-padding-x) } else { 0.12 }
-      let label-size = if component.type in ("short", "load", "not-connected") { termination-options(component).at("font-size", default: font-size) } else { font-size }
+      let label-size = component-font-size(component, default: font-size)
       let label-width = measure(text(size: label-size, label)).width / unit + 2 * padding
       if component.type in ("short", "load", "not-connected") {
         let scale = component.at("scale", default: 0.65)
@@ -154,13 +155,13 @@
     }))
   let heights = config.lines.map(wire => wire.at("components", default: ()).map(component => {
     if component.type == "attenuator" {
-      calc.max(0.48, measure(text(size: font-size, component-label(component))).height / unit
+      calc.max(0.48, measure(text(size: component-font-size(component, default: font-size), component-label(component))).height / unit
         + 2 * component.at("padding-y", default: attenuator-padding-y))
     } else { 0.48 }
   }))
   let couplers = resolve-couplers(config)
   let coupler-widths = couplers.map(c => calc.max(c.at("width", default: 0.9),
-    measure(text(size: font-size, c.at("label", default: ""))).width / unit + 0.24))
+    measure(text(size: component-font-size(c, default: font-size), c.at("label", default: ""))).width / unit + 0.24))
   // Consume each line's stage components up to each paired coupler slot, then
   // synchronize the two cursors before continuing with downstream components.
   let component-offsets = widths.map(row => row.map(_ => 0))
@@ -313,6 +314,14 @@
   /// Label text size. Must be positive.
   /// -> length
   font-size: 9pt,
+  /// Left line label size. None uses config `line-label-font-size`, then font-size.
+  /// Numeric values are points; positive Typst lengths are also accepted.
+  /// -> none | int | float | length
+  line-label-font-size: none,
+  /// Left line labels at `left` (aligned with the wire) or `top` (above its start).
+  /// None uses config `line-label-position`, defaulting to `left`.
+  /// -> none | str
+  line-label-position: none,
   /// Minimum horizontal interval after each stage, in canvas units. Nonnegative.
   /// -> int | float
   min-stage-gap: 1.6,
@@ -347,11 +356,12 @@
   /// -> length
   stage-stroke: 1.2pt,
   /// Nonnegative wire length outside the diagram intervals, in canvas units.
+  /// For top line labels, the left lead expands to fit the widest label plus padding.
   /// -> int | float
   lead: 0.65,
   /// Diagram keyword options overriding individual arguments. Unknown keys are rejected.
   /// Accepted keys: unit, font-size, min-stage-gap, component-gap, stage-padding,
-  /// attenuator-padding-x/y, line-gap, first-stage-side, stage-label-position, stroke, stage-stroke, lead.
+  /// line-label-font-size, line-label-position, attenuator-padding-x/y, line-gap, first-stage-side, stage-label-position, stroke, stage-stroke, lead.
   /// -> dictionary
   style: (:),
   /// At most one positional drawing block returning an array of `add` commands and CeTZ elements.
@@ -364,10 +374,16 @@
 ) = context {
   assert(body.named() == (:) and body.pos().len() <= 1, message: "fridge accepts one optional drawing block.")
   let (config, extras) = add.assemble(config, body.pos().at(0, default: ()))
-  let allowed = ("unit", "font-size", "min-stage-gap", "component-gap", "stage-padding", "attenuator-padding-x", "attenuator-padding-y", "line-gap", "stroke", "stage-stroke", "lead", "first-stage-side", "stage-label-position")
+  let allowed = ("unit", "font-size", "line-label-font-size", "line-label-position", "min-stage-gap", "component-gap", "stage-padding", "attenuator-padding-x", "attenuator-padding-y", "line-gap", "stroke", "stage-stroke", "lead", "first-stage-side", "stage-label-position")
   assert(style.keys().all(key => key in allowed), message: "Unknown fridge style key.")
   let unit = style.at("unit", default: unit)
   let font-size = style.at("font-size", default: font-size)
+  let line-label-position = style.at("line-label-position", default: line-label-position)
+  let line-label-position = if line-label-position == none { config.at("line-label-position", default: "left") } else { line-label-position }
+  assert(line-label-position in ("left", "top"), message: "line-label-position must be left or top.")
+  let line-label-font-size = style.at("line-label-font-size", default: line-label-font-size)
+  let line-label-font-size = if line-label-font-size == none { config.at("line-label-font-size", default: font-size) } else { line-label-font-size }
+  let line-label-font-size = component-font-size((font-size: line-label-font-size))
   let min-stage-gap = style.at("min-stage-gap", default: min-stage-gap)
   let component-gap = style.at("component-gap", default: component-gap)
   let stage-padding = style.at("stage-padding", default: stage-padding)
@@ -394,11 +410,18 @@
     first-stage-side: first-stage-side,
   )
   assert(lead >= 0, message: "lead must be nonnegative.")
+  let line-labels = config.lines.enumerate().map(((row, wire)) =>
+    text(size: line-label-font-size, str(wire.at("label", default: row + 1))))
+  let line-label-padding = 0.15
+  let left-lead = if line-label-position == "top" {
+    calc.max(lead, line-labels.map(label => measure(label).width / unit).fold(0, calc.max)
+      + 2 * line-label-padding)
+  } else { lead }
   canvas(length: unit, {
     import draw: content, line
     draw.set-style(line: (stroke: stroke))
     draw.anchor("fridge-right", (layout.end + lead, 0))
-    let wire-start = -layout.left-extent - lead
+    let wire-start = -layout.left-extent - left-lead
     draw.anchor("fridge-left", (wire-start, 0))
     let bottom = -(config.lines.len() - 1) * line-gap - 0.45
     for (index, stage) in config.stages.enumerate() {
@@ -447,7 +470,12 @@
       } else {
         line((wire-start, y), (wire-end, y), stroke: wire-stroke, name: "wire-" + str(row + 1))
       }
-      content((wire-start - 0.15, y), text(size: font-size, str(wire.at("label", default: row + 1))), anchor: "east")
+      content(
+        if line-label-position == "top" { (wire-start + line-label-padding, y + 0.15) } else { (wire-start - 0.15, y) },
+        line-labels.at(row),
+        anchor: if line-label-position == "top" { "south-west" } else { "east" },
+        name: "line-label-" + str(row + 1),
+      )
       if coupled.len() == 0 and not has-switch and not has-termination and not "connect" in wire and not "termination" in wire and wire.at("port", default: none) != none {
         content((layout.end + lead + 0.15, y), text(size: font-size, str(wire.port)), anchor: "west")
       }
@@ -469,7 +497,7 @@
     for coupler in layout.couplers {
       draw.group(name: coupler.name, {
         directional-coupler(x: coupler.x, y: -coupler.through * line-gap, coupled-y: -coupler.coupled * line-gap,
-          width: coupler.width, label: coupler.at("label", default: ""), font-size: font-size, stroke: stroke)
+          width: coupler.width, label: coupler.at("label", default: ""), font-size: component-font-size(coupler, default: font-size), stroke: stroke)
       })
     }
     // Terminations are drawn after all component and line anchors exist.
