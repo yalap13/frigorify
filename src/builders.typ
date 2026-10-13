@@ -1,4 +1,4 @@
-#import "lines.typ": sline, zline, right-end
+#import "lines.typ": sline, zline, right-end, left-end
 // These commands collect components before measuring and drawing the fridge.
 /// Create a generic stage component command for a `fridge` drawing block.
 /// Prefer the named builders for discoverable options. Components are collected

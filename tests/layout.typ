@@ -67,3 +67,12 @@
   fridge(overridden, style: (attenuator-padding-x: 0, attenuator-padding-y: 0))
   fridge(busy)
 }
+
+#context {
+  let config = (stages: ((id: "a", label: "A"),), lines: ((:),))
+  let compact = fridge-layout(config, min-stage-gap: 0, stage-padding: 0)
+  assert.eq(compact.gaps, (0,))
+  assert.eq(compact.end, 0)
+  assert.eq(fridge-layout(config).gaps, (1.6,))
+  assert.eq(fridge-layout(config).stage-padding, 0.22)
+}

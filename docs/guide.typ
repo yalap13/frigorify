@@ -137,6 +137,27 @@ physical connection points independently of labels and reserved widths.
   [Named standalone/port termination], [`name.in` input and `name.ground` first ground bar.],
 )
 
+== Minimum stage spacing
+
+`min-stage-gap` and `stage-padding` accept zero. Their defaults remain 1.6 and
+0.22 canvas units. Automatic layout still reserves room for components and
+neighboring stage labels.
+
+```typ
+f.fridge(config, min-stage-gap: 0, stage-padding: 0)
+```
+
+== Stage label placement
+
+Pass `stage-label-position: "bottom"` to `f.fridge` to place stage labels below
+the stage boundaries. The default is `"top"`. The option also works in `style`
+and as a top-level JSON/config field. Style overrides the keyword argument,
+which overrides the config field.
+
+```typ
+f.fridge(config, stage-label-position: "bottom")
+```
+
 == Connections and routing
 
 ```typ
@@ -346,3 +367,14 @@ Works with ordinary draw.line and content too. It resolves through the
 are included. It uses the diagram's normal endpoint even when some lines end
 earlier at a component. Use inside a fridge drawing block; in a standalone
 CeTZ canvas, define fridge-right yourself before using the helper.
+
+`f.left-end(y)` (also `f.add.left-end`) works the same way for the left endpoint.
+It resolves through `fridge-left`, including the resolved lead and any first-stage
+chains placed to the left of their boundary:
+
+```typ
+f.sline(f.left-end(-1), "component-1-1.port-3")
+f.zline(f.left-end("component-1-1.port-3"), "component-1-1.port-3")
+```
+
+In a standalone CeTZ canvas, define `fridge-left` before using this helper.

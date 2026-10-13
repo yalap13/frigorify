@@ -83,17 +83,22 @@ Circulators have inline left/right ports and bottom ports for custom routing. Pr
   line-gap: 0.85,
   stroke: 0.7pt,
   stage-stroke: 1.2pt,
+  stage-label-position: "top",
   lead: 0.65,
 )
 ```
+
+`stage-label-position: "bottom"` places stage labels below the stage boundaries; the default is `"top"`. It also works in `style`, or as a top-level config/JSON field `"stage-label-position": "bottom"`. Style overrides the keyword argument, which overrides the config field.
 
 Numeric distances are in `unit` (1 cm by default). `line-gap` controls the vertical distance between signal lines; retain enough room for labels above amplifiers and circulators when changing it or the font size. `lead` controls wire length outside the first and last intervals. `stroke` is a stroke thickness; stage boundaries have a separate thickness.
 
 `attenuator-padding-x` and `attenuator-padding-y` set the minimum space on each side of attenuator text, in canvas units. They also work in `style`. Override them per attenuator using `padding-x` and `padding-y`, for example `(type: "attenuator", stage: "4k", db: 20, padding-x: 0.3, padding-y: 0.15)` or `add.attenuator("drive", "4k", db: 20, padding-x: 0.3)`. Values must be nonnegative. Boxes retain a minimum width of 0.95 and height of 0.48 units, so short labels can have extra space. Larger vertical padding may require increasing `line-gap`. Standalone renderers accept `height` in the component dictionary; automatic text padding is calculated by `fridge-layout` and `fridge`.
 
+`min-stage-gap` and `stage-padding` may both be zero; their defaults remain 1.6 and 0.22 canvas units. Automatic spacing still reserves enough room for components and neighboring stage labels.
+
 For each interval, Frigorify measures label widths and sums component widths, component gaps, and trailing stage padding for every line. The largest required width sets the interval width for all lines. Neighboring stage labels also set a lower bound on spacing. Empty intervals retain `min-stage-gap`. This produces aligned stage boundaries without manual coordinates.
 
-`fridge-layout(config, ...)` exposes the computed `stages`, `end`, `gaps`, and per-line component `widths`, plus spacing values. It accepts the geometry and font options above, except `stroke`, `stage-stroke`, and `lead`. Call it inside `context`, because label measurements depend on Typst's text environment.
+`fridge-layout(config, ...)` exposes the computed `stages`, `end`, `gaps`, and per-line component `widths`, plus spacing values. It accepts the geometry and font options above, except `stroke`, `stage-stroke`, `stage-label-position`, and `lead`. Call it inside `context`, because label measurements depend on Typst's text environment.
 
 `fridge-component(component, x: 0, y: 0, width: 1, font-size: 9pt, stroke: 0.7pt)` emits a standalone symbol inside a CeTZ canvas. Its `x` is the left edge and `y` is the center of the signal line. Amplifiers have a fixed triangle height of 0.48 units, and circulators a fixed diameter of 0.54 units per junction; `width` reserves room for their labels and the next component. `stage-padding` is clearance after a component chain, before the next boundary; use `fridge-layout` when automatic text fitting is needed.
 
@@ -473,3 +478,14 @@ Works with ordinary draw.line and content too. It resolves through the
 are included. It uses the diagram's normal endpoint even when some lines end
 earlier at a component. Use inside a fridge drawing block; in a standalone
 CeTZ canvas, define fridge-right yourself before using the helper.
+
+`f.left-end(y)` (also `f.add.left-end`) works the same way for the left endpoint.
+It resolves through `fridge-left`, including the resolved lead and any first-stage
+chains placed to the left of their boundary:
+
+```typ
+f.sline(f.left-end(-1), "component-1-1.port-3")
+f.zline(f.left-end("component-1-1.port-3"), "component-1-1.port-3")
+```
+
+In a standalone CeTZ canvas, define `fridge-left` before using this helper.

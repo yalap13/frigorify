@@ -34,6 +34,7 @@ with tempfile.TemporaryDirectory(dir=ROOT / "tests") as directory:
     print("PASS line stroke inheritance and explicit overrides")
 
     cases = [
+        ({"stage-label-position": "left", "stages": [{"id": "a", "label": "A"}], "lines": [{}]}, "stage-label-position must be top or bottom"),
         ({"stages": [{"id": "a", "label": "A"}], "lines": [{"components": [{"type": "not-connected", "stage": "a"}, {"type": "filter", "stage": "a"}]}]}, "Termination must be the final"),
 
         ({"stages": [{"id": "a", "label": "A"}], "lines": [{"id": "a"}, {"id": "b"}, {"id": "c"}], "couplers": [{"through": "a", "coupled": "c", "stage": "a"}]}, "Coupler lines must be adjacent"),

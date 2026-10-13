@@ -1,6 +1,6 @@
 #import "couplers.typ": directional-coupler, resolve-couplers
 #import "terminations.typ": short, load, termination-options
-#import "lines.typ": sline, zline, right-end
+#import "lines.typ": sline, zline, right-end, left-end
 #import "@preview/cetz:0.5.2": canvas, draw
 
 #import "builders.typ" as add
@@ -105,7 +105,7 @@
   /// Label text size. Must be positive.
   /// -> length
   font-size: 9pt,
-  /// Minimum horizontal interval after each stage, in canvas units. Must be positive.
+  /// Minimum horizontal interval after each stage, in canvas units. Nonnegative.
   /// -> int | float
   min-stage-gap: 1.6,
   /// Nonnegative horizontal space between components at the same stage, in canvas units.
@@ -133,8 +133,8 @@
   assert(first-stage-side in ("left", "right"), message: "first-stage-side must be left or right.")
   assert(unit > 0pt and font-size > 0pt, message: "unit and font-size must be positive lengths.")
   assert(
-    min-stage-gap > 0 and component-gap >= 0 and stage-padding >= 0 and line-gap > 0,
-    message: "Layout spacing must be positive (padding and component-gap may be zero).",
+    min-stage-gap >= 0 and component-gap >= 0 and stage-padding >= 0 and line-gap > 0,
+    message: "line-gap must be positive; min-stage-gap, component-gap, and stage-padding must be nonnegative.",
   )
   assert(attenuator-padding-x >= 0 and attenuator-padding-y >= 0, message: "Attenuator padding must be nonnegative.")
   let widths = config.lines.map(wire => wire
@@ -313,7 +313,7 @@
   /// Label text size. Must be positive.
   /// -> length
   font-size: 9pt,
-  /// Minimum horizontal interval after each stage, in canvas units. Must be positive.
+  /// Minimum horizontal interval after each stage, in canvas units. Nonnegative.
   /// -> int | float
   min-stage-gap: 1.6,
   /// Nonnegative horizontal space between components at the same stage, in canvas units.
@@ -339,6 +339,10 @@
   /// lines (`draw.line`, `sline`, and `zline`) unless explicitly overridden.
   /// -> length
   stroke: 0.7pt,
+  /// Place stage labels at `top` or `bottom`. None uses the config's
+  /// `stage-label-position` field, defaulting to `top`.
+  /// -> none | str
+  stage-label-position: none,
   /// Thickness of stage boundaries.
   /// -> length
   stage-stroke: 1.2pt,
@@ -347,7 +351,7 @@
   lead: 0.65,
   /// Diagram keyword options overriding individual arguments. Unknown keys are rejected.
   /// Accepted keys: unit, font-size, min-stage-gap, component-gap, stage-padding,
-  /// attenuator-padding-x/y, line-gap, first-stage-side, stroke, stage-stroke, lead.
+  /// attenuator-padding-x/y, line-gap, first-stage-side, stage-label-position, stroke, stage-stroke, lead.
   /// -> dictionary
   style: (:),
   /// At most one positional drawing block returning an array of `add` commands and CeTZ elements.
@@ -360,7 +364,7 @@
 ) = context {
   assert(body.named() == (:) and body.pos().len() <= 1, message: "fridge accepts one optional drawing block.")
   let (config, extras) = add.assemble(config, body.pos().at(0, default: ()))
-  let allowed = ("unit", "font-size", "min-stage-gap", "component-gap", "stage-padding", "attenuator-padding-x", "attenuator-padding-y", "line-gap", "stroke", "stage-stroke", "lead", "first-stage-side")
+  let allowed = ("unit", "font-size", "min-stage-gap", "component-gap", "stage-padding", "attenuator-padding-x", "attenuator-padding-y", "line-gap", "stroke", "stage-stroke", "lead", "first-stage-side", "stage-label-position")
   assert(style.keys().all(key => key in allowed), message: "Unknown fridge style key.")
   let unit = style.at("unit", default: unit)
   let font-size = style.at("font-size", default: font-size)
@@ -374,6 +378,9 @@
   let stage-stroke = style.at("stage-stroke", default: stage-stroke)
   let lead = style.at("lead", default: lead)
   let first-stage-side = style.at("first-stage-side", default: first-stage-side)
+  let stage-label-position = style.at("stage-label-position", default: stage-label-position)
+  let stage-label-position = if stage-label-position == none { config.at("stage-label-position", default: "top") } else { stage-label-position }
+  assert(stage-label-position in ("top", "bottom"), message: "stage-label-position must be top or bottom.")
   let layout = fridge-layout(
     config,
     unit: unit,
@@ -392,11 +399,13 @@
     draw.set-style(line: (stroke: stroke))
     draw.anchor("fridge-right", (layout.end + lead, 0))
     let wire-start = -layout.left-extent - lead
+    draw.anchor("fridge-left", (wire-start, 0))
     let bottom = -(config.lines.len() - 1) * line-gap - 0.45
     for (index, stage) in config.stages.enumerate() {
       let x = layout.stages.at(index)
       line((x, 0.52), (x, bottom), stroke: stage-stroke, name: "stage-" + stage.id)
-      content((x, 0.85), text(size: font-size, weight: "bold", stage.label))
+      content((x, if stage-label-position == "top" { 0.85 } else { bottom - 0.33 }),
+        text(size: font-size, weight: "bold", stage.label))
     }
     for (row, wire) in config.lines.enumerate() {
       let y = -row * line-gap

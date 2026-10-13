@@ -97,3 +97,15 @@
   /// -> int | float | array | str | dictionary
   y,
 ) = (horizontal: "fridge-right", vertical: if type(y) in (int, float) { (0, y) } else { y })
+
+/// Return a CeTZ coordinate at the fridge's left endpoint x (-layout.left-extent - lead).
+/// Use with draw.line, sline, zline, or content in a fridge drawing block. Numeric
+/// input selects a canvas y; a CeTZ coordinate/anchor supplies its y. Resolution is
+/// deferred until drawing, respecting style lead overrides and first-stage chains
+/// placed to the left of their boundary. Also available as add.left-end.
+/// -> dictionary
+#let left-end(
+  /// Y in canvas units, or a CeTZ coordinate/anchor whose y should be reused.
+  /// -> int | float | array | str | dictionary
+  y,
+) = (horizontal: "fridge-left", vertical: if type(y) in (int, float) { (0, y) } else { y })
