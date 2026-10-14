@@ -381,7 +381,7 @@
   /// Component dictionary. See the function description for supported fields.
   /// -> dictionary
   component,
-  /// Left edge of the symbol, in canvas units.
+  /// Start of the symbol axis, in canvas units. Vertical symbols extend upward from (x, y).
   /// -> int | float
   x: 0,
   /// Wire center and vertical center of the symbol, in canvas units.
@@ -390,6 +390,10 @@
   /// Reserved horizontal space in canvas units. Sets rectangle width; triangles and circles have fixed geometry. Standalone rendering does not measure labels automatically.
   /// -> int | float
   width: 1,
+  /// Symbol orientation: horizontal (default) or vertical (90 degrees counterclockwise).
+  /// Width is the reserved distance along the symbol axis. Labels rotate with the symbol.
+  /// -> str
+  orientation: "horizontal",
   /// Label text size. Must be positive.
   /// -> length
   font-size: 9pt,
@@ -401,5 +405,14 @@
   let renderers = (attenuator: attenuator, amplifier: amplifier, circulator: circulator, filter: filter, rf-switch: rf-switch, short: termination-component, load: termination-component, not-connected: not-connected)
   assert(component.type in renderers, message: "Unknown component type: " + repr(component.type))
   let render = renderers.at(component.type)
-  render(component, x: x, y: y, width: width, font-size: font-size, stroke: stroke)
+  assert(orientation in ("horizontal", "vertical"), message: "Component orientation must be horizontal or vertical.")
+  if orientation == "horizontal" {
+    render(component, x: x, y: y, width: width, font-size: font-size, stroke: stroke)
+  } else {
+    draw.scope({
+      draw.rotate(90deg, origin: (x, y))
+      draw.set-style(content: (wrap: body => rotate(-90deg, reflow: true, body)))
+      render(component, x: x, y: y, width: width, font-size: font-size, stroke: stroke)
+    })
+  }
 }

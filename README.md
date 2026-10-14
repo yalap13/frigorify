@@ -497,3 +497,25 @@ f.zline(f.left-end("component-1-1.port-3"), "component-1-1.port-3")
 ```
 
 In a standalone CeTZ canvas, define `fridge-left` before using this helper.
+
+### Vertical standalone components
+
+Use `orientation: "vertical"` with `fridge-component` to place a symbol on a
+vertical segment of an `sline` or `zline`:
+
+```typst
+f.zline((0, 0), (3, -2))
+f.fridge-component(
+  (type: "attenuator", db: 20),
+  x: 1.5, y: -1.5, width: 0.95,
+  orientation: "vertical",
+)
+```
+
+Vertical orientation rotates the symbol 90 degrees counterclockwise about
+`(x, y)`, so it extends upward. `width` specifies its span along that axis;
+labels and port anchors rotate with the symbol. For example,
+a circulator's `in` is at `(x, y)` and its `out` is above it. Wrap the renderer
+in a named CeTZ group to use its anchors. The default is `"horizontal"`.
+This option is for standalone placement; fridge stage components retain their
+horizontal layout.
